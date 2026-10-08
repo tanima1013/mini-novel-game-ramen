@@ -3,801 +3,518 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ラーメンを食べるか否か</title>
-
 <style>
-/* 全体 */
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; min-height: 100%; }
 body {
-    margin: 0;
-    min-height: 100vh;
-    background: #111;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  background: #111;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: "Yu Gothic", sans-serif;
 }
-#novel-game {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
-}
-
-/* ゲーム画面 */
 #game-screen {
-    position: relative;
-    width: 700px;
-    max-width: 100%;
-    height: 800px;
-    overflow: hidden;
-    background: #222;
-    border-radius: 12px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+  position: relative;
+  width: 700px;
+  max-width: 100%;
+  height: 800px;
+  background: #222;
+  overflow: hidden;
+  border-radius: 12px;
 }
-
-/* 背景画像 */
 #background-image {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 550px;
-    object-fit: contain;
-    background: #222;
-    display: none;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 550px;
+  object-fit: contain;
+  display: none;
 }
-
-/* タイトル画面 */
 #title-screen {
-    position: absolute;
-    inset: 0;
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background: linear-gradient(
-        rgba(20,20,20,0.5),
-        rgba(0,0,0,0.9)
-    );
-    color: white;
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(#2229, #000e);
+  color: white;
 }
 #game-title {
-    margin-bottom: 70px;
-    padding: 20px;
-    font-size: 42px;
-    font-weight: bold;
-    text-align: center;
-    text-shadow: 0 3px 10px black;
+  font-size: 42px;
+  font-weight: bold;
+  text-align: center;
+  margin: 20px 15px 65px;
 }
 #game-start-button {
-    width: 260px;
-    padding: 18px;
-    border: 2px solid white;
-    border-radius: 10px;
-    background: rgba(0,0,0,0.65);
-    color: white;
-    font-size: 22px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
+  padding: 18px 35px;
+  background: #111;
+  border: 2px solid white;
+  border-radius: 10px;
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
 }
-#game-start-button:hover {
-    background: white;
-    color: black;
-    transform: scale(1.05);
-}
-
-/* テキスト画面 */
 #text-panel {
-    position: absolute;
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    z-index: 20;
-    min-height: 220px;
-    padding: 18px;
-    box-sizing: border-box;
-    background: rgba(10,10,10,0.92);
-    border-radius: 12px;
-    color: white;
-    cursor: pointer;
-    display: none;
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 5;
+  min-height: 220px;
+  max-height: 45%;
+  padding: 18px;
+  background: rgba(10,10,10,.94);
+  border-radius: 12px;
+  color: white;
+  overflow-y: auto;
+  display: none;
+  cursor: pointer;
 }
 #character-name {
-    min-height: 30px;
-    margin-bottom: 10px;
-    font-size: 20px;
-    font-weight: bold;
+  min-height: 30px;
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 10px;
 }
 #novel-text {
-    min-height: 100px;
-    font-size: 18px;
-    line-height: 1.8;
-    white-space: pre-wrap;
+  font-size: 18px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding-bottom: 45px;
 }
-
-/* 次へボタン */
 #next-button {
-    position: absolute;
-    right: 15px;
-    bottom: 12px;
-    width: 50px;
-    height: 40px;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: white;
-    font-size: 22px;
-    cursor: pointer;
-    display: none;
-}
-#next-button:hover {
-    background: rgba(255,255,255,0.1);
-}
-
-/* 選択肢 */
-#choice-area {
-    width: 100%;
+  position: sticky;
+  float: right;
+  bottom: 0;
+  border: none;
+  background: #333;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 20px;
+  cursor: pointer;
+  display: none;
 }
 .choice-button {
-    display: block;
-    width: 100%;
-    margin: 10px 0;
-    padding: 16px;
-    box-sizing: border-box;
-    border: none;
-    border-radius: 8px;
-    background: rgba(50,50,50,0.95);
-    color: white;
-    font-size: 17px;
-    cursor: pointer;
-    transition: 0.15s;
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 15px;
+  border: none;
+  border-radius: 8px;
+  background: #444;
+  color: white;
+  font-size: 17px;
+  cursor: pointer;
+  touch-action: manipulation;
 }
-.choice-button:hover {
-    background: rgba(90,90,90,0.95);
-    transform: translateY(-1px);
-}
+.end-title { font-size: 28px; font-weight: bold; }
+.end-return { margin-top: 20px; font-size: 14px; opacity: .7; }
 
-/* エンディング */
-.end-title {
-    margin-bottom: 15px;
-    font-size: 28px;
-    font-weight: bold;
-}
-.end-return {
-    margin-top: 25px;
-    font-size: 14px;
-    opacity: 0.65;
+@media (max-width: 700px) {
+  body { align-items: stretch; }
+  #game-screen {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    border-radius: 0;
+  }
+  #background-image {
+    height: min(65dvh, 550px);
+  }
+  #game-title { font-size: clamp(24px, 7vw, 38px); }
+  #text-panel {
+    left: 8px;
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    padding: 14px;
+    min-height: 0;
+    max-height: 45dvh;
+  }
+  #character-name { font-size: 17px; }
+  #novel-text { font-size: 16px; line-height: 1.65; }
+  .choice-button { font-size: 16px; padding: 12px; }
 }
 </style>
 </head>
-
 <body>
-<div id="novel-game">
-    <div id="game-screen">
-        <img id="background-image" alt="">
 
-        <div id="title-screen">
-            <div id="game-title">ラーメンを食べるか否か</div>
-            <button id="game-start-button">GAME START</button>
-        </div>
+<div id="game-screen">
+  <img id="background-image" alt="">
 
-        <div id="text-panel">
-            <div id="character-name"></div>
-            <div id="novel-text"></div>
-            <div id="choice-area"></div>
-            <button id="next-button">▼</button>
-        </div>
-    </div>
+  <div id="title-screen">
+    <div id="game-title">ラーメンを食べるか否か</div>
+    <button id="game-start-button">GAME START</button>
+  </div>
+
+  <div id="text-panel">
+    <div id="character-name"></div>
+    <div id="novel-text"></div>
+    <div id="choice-area"></div>
+    <button id="next-button">▼</button>
+  </div>
 </div>
 
 <script>
-(function () {
 "use strict";
 
-// ============================================================
-// キャラクター
-// ============================================================
 const CHARACTERS = {
-    player: { name: "主人公", color: "#FFFFFF" },
-    sale: { name: "店員", color: "#FF77AA" },
-    boss: { name: "魔王", color: "#FF77AA" },
-    mysterious: { name: "???", color: "#8888FF" }
+  player: { name: "主人公", color: "#FFFFFF" },
+  sale: { name: "店員", color: "#FF77AA" },
+  boss: { name: "魔王", color: "#FF77AA" },
+  mysterious: { name: "???", color: "#8888FF" }
 };
 
-// ============================================================
-// シナリオ
-// ============================================================
 const SCENARIO = [
-    // 0
-    {
-        type: "text",
-        character: "player",
-        background: "bg_home.png",
-        text: "腹減った。早く家に帰ってご飯食べよ。"
-    },
-    // 1
-    {
-        type: "narration",
-        background: "bg_ramen.png",
-        text: "目の前にラーメン二郎の店があった。"
-    },
-    // 2
-    {
-        type: "narration",
-        background: "ramen1.png",
-        text: "主人公は週に1、2回は食べるほどラーメンが好きだ。"
-    },
-    // 3
-    {
-        type: "narration",
-        background: "ramen1.png",
-        text: "特に二郎系が好きで、濃厚なスープ、太くモチモチした麺、柔らかく美味しいチャーシュー、強烈なニンニクの香りと味を味わいたく来店することが多い。"
-    },
-    // 4
-    {
-        type: "narration",
-        background: "ramen1.png",
-        text: "だが、最近はゲームやコンビニでも金を使っているため、余裕がなくなってきている。"
-    },
-    // 5
-    {
-        type: "narration",
-        text: "そのため、最近は無駄な出費は抑え、ご飯も家で済ますようにしていた。"
-    },
-    // 6
-    {
-        type: "narration",
-        background: "bg_ramen.png",
-        text: "悩んだ末に、主人公は..."
-    },
-    // 7
-    {
-        type: "choice",
-        background: "bg_ramen.png",
-        choices: [
-            { text: "二郎に行く。", next: 8 },
-            { text: "家で食べる。", next: 19 }
-        ]
-    },
-    // 8
-    {
-        type: "text",
-        character: "player",
-        background: "bg_ramen.png",
-        text: "ああ、我慢できない!"
-    },
-    // 9
-    {
-        type: "narration",
-        background: "ramen4.png",
-        text: "主人公は食券を店員に渡し席についた。"
-    },
-    // 10
-    {
-        type: "narration",
-        background: "ramen4.png",
-        text: "...10分後"
-    },
-    // 11
-    {
-        type: "text",
-        character: "sale",
-        background: "ramen4.png",
-        text: "ニンニク入れますか?"
-    },
-    // 12
-    {
-        type: "text",
-        character: "player",
-        background: "ramen4.png",
-        text: "ニンニク、アブラ、カラメで。"
-    },
-    // 13
-    {
-        type: "text",
-        character: "sale",
-        background: "ramen2.png",
-        text: "はいっ!お待たせしました!ニンニク、アブラ、カラメです。"
-    },
-    // 14
-    {
-        type: "text",
-        character: "player",
-        background: "ramen2.png",
-        text: "いただきます!"
-    },
-    // 15
-    {
-        type: "narration",
-        background: "ramen2.png",
-        text: "...10分後"
-    },
-    // 16
-    {
-        type: "text",
-        character: "player",
-        background: "ramen3.png",
-        text: "ご馳走様でした。"
-    },
-    // 17
-    {
-        type: "text",
-        character: "player",
-        background: "nightsky.png",
-        text: "満腹、満腹。美味しかった。"
-    },
-    // 18
-    {
-        type: "end",
-        background: "Apple.png",
-        title: "満足END",
-        text: "帰りにリンゴジュースを買った。"
-    },
-    // 19
-    {
-        type: "text",
-        character: "player",
-        background: "nightsky.png",
-        text: "家にまだご飯あるし、食べようと思えばいつでも食えるし、我慢しよう。"
-    },
-    // 20
-    {
-        type: "end",
-        background: "end2.png",
-        title: "節約END",
-        text: "節約できた。"
-    }
+  {type:"text",character:"player",background:"bg_home.png",
+   text:"腹減った。早く家に帰ってご飯食べよ。"},
+  {type:"narration",background:"bg_ramen.png",
+   text:"目の前にラーメン二郎の店があった。"},
+  {type:"narration",background:"ramen1.png",
+   text:"主人公は週に1、2回は食べるほどラーメンが好きだ。"},
+  {type:"narration",background:"ramen1.png",
+   text:"特に二郎系が好きで、濃厚なスープ、太くモチモチした麺、柔らかく美味しいチャーシュー、強烈なニンニクの香りと味を味わいたく来店することが多い。"},
+  {type:"narration",background:"ramen1.png",
+   text:"だが、最近はゲームやコンビニでも金を使っているため、余裕がなくなってきている。"},
+  {type:"narration",
+   text:"そのため、最近は無駄な出費は抑え、ご飯も家で済ますようにしていた。"},
+  {type:"narration",background:"bg_ramen.png",
+   text:"悩んだ末に、主人公は..."},
+  {type:"choice",background:"bg_ramen.png",choices:[
+    {text:"二郎に行く。",next:8},
+    {text:"家で食べる。",next:19}
+  ]},
+  {type:"text",character:"player",background:"bg_ramen.png",
+   text:"ああ、我慢できない!"},
+  {type:"narration",background:"ramen4.png",
+   text:"主人公は食券を店員に渡し席についた。"},
+  {type:"narration",background:"ramen4.png",text:"...10分後"},
+  {type:"text",character:"sale",background:"ramen4.png",
+   text:"ニンニク入れますか?"},
+  {type:"text",character:"player",background:"ramen4.png",
+   text:"ニンニク、アブラ、カラメで。"},
+  {type:"text",character:"sale",background:"ramen2.png",
+   text:"はいっ!お待たせしました!ニンニク、アブラ、カラメです。"},
+  {type:"text",character:"player",background:"ramen2.png",
+   text:"いただきます!"},
+  {type:"narration",background:"ramen2.png",text:"...10分後"},
+  {type:"text",character:"player",background:"ramen3.png",
+   text:"ご馳走様でした。"},
+  {type:"text",character:"player",background:"nightsky.png",
+   text:"満腹、満腹。美味しかった。"},
+  {type:"end",background:"Apple.png",title:"満足END",
+   text:"帰りにリンゴジュースを買った。"},
+  {type:"text",character:"player",background:"nightsky.png",
+   text:"家にまだご飯あるし、食べようと思えばいつでも食えるし、我慢しよう。"},
+  {type:"end",background:"end2.png",title:"節約END",
+   text:"節約できた。"}
 ];
 
-// ============================================================
-// 画像・音声設定
-// index.htmlと同じ階層のファイルを参照
-// ============================================================
-const BACKGROUND_DATA = {
-    "bg_home.png": "bg_home.png",
-    "bg_ramen.png": "bg_ramen.png",
-    "ramen1.png": "ramen1.png",
-    "ramen2.png": "ramen2.png",
-    "ramen3.png": "ramen3.png",
-    "ramen4.png": "ramen4.png",
-    "nightsky.png": "nightsky.png",
-    "Apple.png": "Apple.png",
-    "end2.png": "end2.png"
-};
-
-const BGM_DATA = "bgm.mp3";
-const TYPE_SE_DATA = "type.mp3";
-const CHOICE_SE_DATA = "choice.mp3";
-
-// ============================================================
-// 設定
-// ============================================================
 const TYPE_SPEED = 40;
 const START_DELAY = 300;
 const CHOICE_DELAY = 500;
 
-// ============================================================
-// 状態
-// ============================================================
-let index = 0;
-let currentText = "";
-let currentPosition = 0;
-let typing = false;
-let waitingForNext = false;
-let gameStarted = false;
-let isEnding = false;
-let processId = 0;
+const $ = id => document.getElementById(id);
+const bg = $("background-image");
+const title = $("title-screen");
+const startButton = $("game-start-button");
+const panel = $("text-panel");
+const nameBox = $("character-name");
+const textBox = $("novel-text");
+const choiceArea = $("choice-area");
+const nextButton = $("next-button");
 
-let typeTimer = null;
-let startTimer = null;
-let choiceTimer = null;
+// 画像の先読み
+const imageNames = [...new Set(
+  SCENARIO.map(s => s.background).filter(Boolean)
+)];
+const imageCache = new Map();
 
-// ============================================================
-// UI取得
-// ============================================================
-const root = document.getElementById("novel-game");
-const titleScreen = root.querySelector("#title-screen");
-const startButton = root.querySelector("#game-start-button");
-const backgroundImage = root.querySelector("#background-image");
-const textPanel = root.querySelector("#text-panel");
-const characterName = root.querySelector("#character-name");
-const novelText = root.querySelector("#novel-text");
-const choiceArea = root.querySelector("#choice-area");
-const nextButton = root.querySelector("#next-button");
+const imageReady = Promise.all(imageNames.map(filename => {
+  return new Promise(resolve => {
+    const img = new Image();
+    imageCache.set(filename, img);
+    img.onload = () => resolve();
+    img.onerror = () => {
+      console.warn("画像が見つかりません:", filename);
+      resolve();
+    };
+    img.src = filename;
+  });
+}));
 
-// ============================================================
 // 音声
-// ============================================================
-const bgm = new Audio(BGM_DATA);
+const bgm = new Audio("bgm.mp3");
 bgm.loop = true;
 bgm.volume = 0.35;
 
-const typeSE = new Audio(TYPE_SE_DATA);
-typeSE.volume = 0.25;
-
-const choiceSE = new Audio(CHOICE_SE_DATA);
+const choiceSE = new Audio("choice.mp3");
 choiceSE.volume = 0.7;
 
-function playSE(audio) {
+let audioContext = null;
+let typeBuffer = null;
+
+async function initAudio() {
+  const AudioContextClass =
+    window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+
+  if (!audioContext) {
+    audioContext = new AudioContextClass();
+  }
+  if (audioContext.state === "suspended") {
+    await audioContext.resume();
+  }
+  if (!typeBuffer) {
     try {
-        audio.pause();
-        audio.currentTime = 0;
-        audio.play().catch(() => {});
+      const response = await fetch("type.mp3");
+      if (!response.ok) throw new Error("type.mp3");
+      const data = await response.arrayBuffer();
+      typeBuffer = await audioContext.decodeAudioData(data);
     } catch (error) {
-        console.log("効果音再生失敗:", error);
+      console.warn("文字送り音を読み込めません:", error);
     }
+  }
+}
+
+function playTypeSound() {
+  if (!audioContext || !typeBuffer ||
+      audioContext.state !== "running") return;
+  const source = audioContext.createBufferSource();
+  const gain = audioContext.createGain();
+  source.buffer = typeBuffer;
+  gain.gain.value = 0.25;
+  source.connect(gain);
+  gain.connect(audioContext.destination);
+  source.start();
+}
+
+function playChoiceSound() {
+  choiceSE.currentTime = 0;
+  choiceSE.play().catch(() => {});
 }
 
 function startBGM() {
-    bgm.currentTime = 0;
-    bgm.play().catch(error => {
-        console.log("BGM再生失敗:", error);
-    });
+  bgm.currentTime = 0;
+  bgm.play().catch(() => {});
 }
 
 function stopBGM() {
-    bgm.pause();
-    bgm.currentTime = 0;
+  bgm.pause();
+  bgm.currentTime = 0;
 }
 
-// ============================================================
-// 背景変更
-// ============================================================
-function updateBackground(data) {
-    if (!("background" in data)) return;
+let index = 0;
+let currentText = "";
+let position = 0;
+let typing = false;
+let waiting = false;
+let ending = false;
+let playing = false;
+let timer = null;
+let sceneToken = 0;
 
-    const filename = data.background;
-
-    if (!filename) {
-        backgroundImage.style.display = "none";
-        backgroundImage.removeAttribute("src");
-        return;
-    }
-
-    const imageData = BACKGROUND_DATA[filename];
-
-    if (!imageData) {
-        console.log("画像がありません:", filename);
-        return;
-    }
-
-    backgroundImage.src = imageData;
-    backgroundImage.style.display = "block";
+function clearTimer() {
+  clearTimeout(timer);
+  timer = null;
 }
 
-// ============================================================
-// タイマー初期化
-// ============================================================
-function clearTimers() {
-    clearTimeout(typeTimer);
-    clearTimeout(startTimer);
-    clearTimeout(choiceTimer);
+function setBackground(scene) {
+  if (!Object.hasOwn(scene, "background")) return;
+  if (!scene.background) {
+    bg.style.display = "none";
+    bg.removeAttribute("src");
+    return;
+  }
+  bg.src = scene.background;
+  bg.style.display = "block";
 }
 
-// ============================================================
-// GAME START
-// ============================================================
-function startGame() {
-    clearTimers();
-    processId++;
+async function startGame() {
+  if (playing) return;
+  playing = true;
+  startButton.disabled = true;
+  startButton.textContent = "読み込み中...";
 
-    index = 0;
-    currentText = "";
-    currentPosition = 0;
-    typing = false;
-    waitingForNext = false;
-    gameStarted = true;
-    isEnding = false;
+  // タップ操作で音声を有効化
+  const audioPromise = initAudio();
+  startBGM();
 
-    characterName.textContent = "";
-    novelText.textContent = "";
-    choiceArea.innerHTML = "";
-    nextButton.style.display = "none";
+  await imageReady;
+  await audioPromise;
 
-    titleScreen.style.display = "none";
-    textPanel.style.display = "block";
-
-    startBGM();
-    showCurrent();
+  index = 0;
+  ending = false;
+  title.style.display = "none";
+  panel.style.display = "block";
+  startButton.disabled = false;
+  startButton.textContent = "GAME START";
+  showScene();
 }
 
-// ============================================================
-// タイトルへ戻る
-// ============================================================
 function returnToTitle() {
-    clearTimers();
-    processId++;
-
-    index = 0;
-    currentText = "";
-    currentPosition = 0;
-    typing = false;
-    waitingForNext = false;
-    gameStarted = false;
-    isEnding = false;
-
-    stopBGM();
-
-    typeSE.pause();
-    typeSE.currentTime = 0;
-    choiceSE.pause();
-    choiceSE.currentTime = 0;
-
-    characterName.textContent = "";
-    novelText.textContent = "";
-    choiceArea.innerHTML = "";
-    nextButton.style.display = "none";
-
-    textPanel.style.display = "none";
-    backgroundImage.style.display = "none";
-    backgroundImage.removeAttribute("src");
-
-    titleScreen.style.display = "flex";
+  sceneToken++;
+  clearTimer();
+  stopBGM();
+  choiceSE.pause();
+  playing = false;
+  ending = false;
+  typing = false;
+  waiting = false;
+  index = 0;
+  nameBox.textContent = "";
+  textBox.textContent = "";
+  choiceArea.replaceChildren();
+  nextButton.style.display = "none";
+  panel.style.display = "none";
+  bg.style.display = "none";
+  bg.removeAttribute("src");
+  title.style.display = "flex";
 }
 
-// ============================================================
-// 現在のシーンを表示
-// ============================================================
-function showCurrent() {
-    processId++;
-    const currentId = processId;
+function showScene() {
+  sceneToken++;
+  clearTimer();
+  typing = false;
+  waiting = false;
+  choiceArea.replaceChildren();
+  nextButton.style.display = "none";
+  panel.scrollTop = 0;
 
-    clearTimers();
-    choiceArea.innerHTML = "";
-    typing = false;
-    waitingForNext = false;
-    nextButton.style.display = "none";
+  if (index < 0 || index >= SCENARIO.length) {
+    returnToTitle();
+    return;
+  }
 
-    if (index < 0 || index >= SCENARIO.length) {
-        returnToTitle();
-        return;
-    }
+  const scene = SCENARIO[index];
+  setBackground(scene);
 
-    const data = SCENARIO[index];
-    updateBackground(data);
+  if (scene.type === "end") {
+    ending = true;
+    nameBox.textContent = scene.title || "END";
+    nameBox.style.color = "#FFFFFF";
+    textBox.textContent =
+      (scene.text || "") + "\n\nタップ・クリックでタイトルへ戻る";
+    return;
+  }
 
-    // エンディング
-    if (data.type === "end") {
-        isEnding = true;
-        characterName.style.color = "#FFFFFF";
-        characterName.innerHTML =
-            '<div class="end-title">' +
-            (data.title || "END") +
-            '</div>';
+  ending = false;
 
-        novelText.innerHTML =
-            (data.text || "") +
-            '<div class="end-return">' +
-            'クリックでタイトルへ戻る' +
-            '</div>';
+  if (scene.type === "choice") {
+    nameBox.textContent = "選択";
+    nameBox.style.color = "#FFFFFF";
+    textBox.textContent = "";
+    showChoices(scene);
+    return;
+  }
 
-        nextButton.style.display = "none";
-        return;
-    }
+  if (scene.type === "text") {
+    const character = CHARACTERS[scene.character] || {};
+    nameBox.textContent = character.name || "";
+    nameBox.style.color = character.color || "#FFFFFF";
+  } else {
+    nameBox.textContent = "";
+    nameBox.style.color = "#FFFFFF";
+  }
 
-    // 選択肢
-    if (data.type === "choice") {
-        isEnding = false;
-        characterName.textContent = "選択";
-        characterName.style.color = "#FFFFFF";
-        novelText.textContent = "";
-        showChoices(data);
-        return;
-    }
-
-    let text = "";
-
-    // 通常のセリフ
-    if (data.type === "text") {
-        const character = CHARACTERS[data.character] || {};
-        characterName.textContent = character.name || "";
-        characterName.style.color = character.color || "#FFFFFF";
-        text = data.text || "";
-    }
-
-    // ナレーション
-    else if (data.type === "narration") {
-        characterName.textContent = "";
-        characterName.style.color = "#FFFFFF";
-        text = data.text || "";
-    }
-
-    else {
-        index++;
-        showCurrent();
-        return;
-    }
-
-    prepareText(text, currentId);
+  prepareText(scene.text || "");
 }
 
-// ============================================================
-// 文章準備
-// ============================================================
-function prepareText(text, currentId) {
-    currentText = text;
-    currentPosition = 0;
-    novelText.textContent = "";
-    typing = false;
-    waitingForNext = false;
-    nextButton.style.display = "none";
+function prepareText(text) {
+  currentText = text;
+  position = 0;
+  typing = false;
+  waiting = false;
+  textBox.textContent = "";
+  const token = sceneToken;
 
-    startTimer = setTimeout(() => {
-        if (currentId !== processId) return;
-
-        typing = true;
-        typeNextCharacter(currentId);
-    }, START_DELAY);
+  timer = setTimeout(() => {
+    if (token !== sceneToken) return;
+    typing = true;
+    typeNext(token);
+  }, START_DELAY);
 }
 
-// ============================================================
-// 文字送り
-// ============================================================
-function typeNextCharacter(currentId) {
-    if (currentId !== processId || !typing) return;
+function typeNext(token) {
+  if (token !== sceneToken || !typing) return;
 
-    if (currentPosition >= currentText.length) {
-        finishTyping();
-        return;
-    }
+  if (position >= currentText.length) {
+    finishTyping();
+    return;
+  }
 
-    currentPosition++;
+  position++;
+  textBox.textContent = currentText.slice(0, position);
 
-    novelText.textContent =
-        currentText.substring(0, currentPosition);
+  if (position % 2 === 0) playTypeSound();
 
-    // 2文字ごとに効果音
-    if (currentPosition % 2 === 0) {
-        playSE(typeSE);
-    }
-
-    typeTimer = setTimeout(() => {
-        typeNextCharacter(currentId);
-    }, TYPE_SPEED);
+  timer = setTimeout(() => typeNext(token), TYPE_SPEED);
 }
 
-// ============================================================
-// 文字送り終了
-// ============================================================
 function finishTyping() {
-    typing = false;
-    currentPosition = currentText.length;
-    novelText.textContent = currentText;
-    waitingForNext = true;
-    nextButton.style.display = "block";
+  clearTimer();
+  typing = false;
+  position = currentText.length;
+  textBox.textContent = currentText;
+  waiting = true;
+  nextButton.style.display = "block";
 }
 
-// ============================================================
-// 全文表示
-// ============================================================
-function showFullText() {
-    clearTimeout(typeTimer);
-    clearTimeout(startTimer);
-
-    typing = false;
-    currentPosition = currentText.length;
-    novelText.textContent = currentText;
-    waitingForNext = true;
-    nextButton.style.display = "block";
-}
-
-// ============================================================
-// 次のシーン
-// ============================================================
 function nextScene() {
-    if (!gameStarted) return;
-
-    typing = false;
-    waitingForNext = false;
-    index++;
-
-    showCurrent();
+  if (!playing || ending) return;
+  index++;
+  showScene();
 }
 
-// ============================================================
-// 選択肢
-// ============================================================
-function showChoices(data) {
-    choiceArea.innerHTML = "";
-
-    const choices = data.choices || [];
-
-    choices.forEach(choice => {
-        const button = document.createElement("button");
-        button.className = "choice-button";
-        button.textContent = choice.text || "";
-
-        button.addEventListener("click", event => {
-            event.stopPropagation();
-
-            playSE(choiceSE);
-            choiceArea.innerHTML = "";
-
-            if (choice.next !== undefined &&
-                choice.next !== null) {
-                index = choice.next;
-            } else {
-                index++;
-            }
-
-            processId++;
-            const choiceId = processId;
-
-            choiceTimer = setTimeout(() => {
-                if (choiceId !== processId) return;
-                showCurrent();
-            }, CHOICE_DELAY);
-        });
-
-        choiceArea.appendChild(button);
+function showChoices(scene) {
+  scene.choices.forEach(choice => {
+    const button = document.createElement("button");
+    button.className = "choice-button";
+    button.textContent = choice.text;
+    button.addEventListener("click", event => {
+      event.stopPropagation();
+      playChoiceSound();
+      choiceArea.replaceChildren();
+      index = choice.next ?? index + 1;
+      sceneToken++;
+      const token = sceneToken;
+      timer = setTimeout(() => {
+        if (token === sceneToken) showScene();
+      }, CHOICE_DELAY);
     });
+    choiceArea.appendChild(button);
+  });
 }
 
-// ============================================================
-// GAME START ボタン
-// ============================================================
-startButton.addEventListener("click", event => {
-    event.preventDefault();
-    event.stopPropagation();
-    startGame();
+function advance() {
+  if (!playing) return;
+  if (ending) {
+    returnToTitle();
+  } else if (choiceArea.children.length > 0) {
+    return;
+  } else if (typing || (!waiting && timer !== null)) {
+    finishTyping();
+  } else if (waiting) {
+    nextScene();
+  }
+}
+
+startButton.addEventListener("click", startGame);
+
+panel.addEventListener("click", event => {
+  if (event.target.closest(".choice-button")) return;
+  advance();
 });
 
-// ============================================================
-// ▼ ボタン
-// ============================================================
 nextButton.addEventListener("click", event => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (isEnding) {
-        returnToTitle();
-        return;
-    }
-
-    if (typing) {
-        showFullText();
-        return;
-    }
-
-    if (waitingForNext) {
-        nextScene();
-    }
+  event.stopPropagation();
+  advance();
 });
-
-// ============================================================
-// テキストパネルのクリック
-// ============================================================
-textPanel.addEventListener("click", event => {
-    if (isEnding) {
-        returnToTitle();
-        return;
-    }
-
-    if (!gameStarted) return;
-
-    if (event.target.closest(".choice-button")) return;
-    if (event.target === nextButton) return;
-
-    if (typing) {
-        showFullText();
-        return;
-    }
-
-    if (waitingForNext) {
-        nextScene();
-    }
-});
-
-// ============================================================
-// 初期画面
-// ============================================================
-titleScreen.style.display = "flex";
-textPanel.style.display = "none";
-backgroundImage.style.display = "none";
-
-})();
 </script>
 </body>
 </html>
