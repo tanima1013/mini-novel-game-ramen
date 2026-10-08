@@ -1,1724 +1,803 @@
-# ============================================================
-# main.py
-# Google Colab用 ノベルゲーム
-# ============================================================
 
-from IPython.display import display, HTML
-from scenario import SCENARIO, CHARACTERS
-
-import base64
-import json
-import os
-import mimetypes
-
-
-# ============================================================
-# フォルダ設定
-# ============================================================
-
-IMAGE_DIR = "/content/images"
-AUDIO_DIR = "/content/audio"
-
-BGM_FILE = "bgm.mp3"
-TYPE_SE_FILE = "type.mp3"
-CHOICE_SE_FILE = "choice.mp3"
-
-
-# ============================================================
-# ファイル → Data URL
-# ============================================================
-
-def file_to_data_url(path):
-
-    if not os.path.exists(path):
-        print("ファイルが見つかりません:", path)
-        return None
-
-    mime_type, _ = mimetypes.guess_type(path)
-
-    if mime_type is None:
-        mime_type = "application/octet-stream"
-
-    with open(path, "rb") as f:
-        encoded = base64.b64encode(
-            f.read()
-        ).decode("utf-8")
-
-    return (
-        "data:"
-        + mime_type
-        + ";base64,"
-        + encoded
-    )
-
-
-# ============================================================
-# 背景画像読み込み
-# ============================================================
-
-BACKGROUND_DATA = {}
-
-for scene in SCENARIO:
-
-    filename = scene.get("background")
-
-    if not filename:
-        continue
-
-    if filename in BACKGROUND_DATA:
-        continue
-
-    path = os.path.join(
-        IMAGE_DIR,
-        filename
-    )
-
-    data_url = file_to_data_url(path)
-
-    if data_url:
-
-        BACKGROUND_DATA[filename] = data_url
-
-        print(
-            "画像読み込み成功:",
-            filename
-        )
-
-
-# ============================================================
-# 音声読み込み
-# ============================================================
-
-BGM_DATA = file_to_data_url(
-    os.path.join(
-        AUDIO_DIR,
-        BGM_FILE
-    )
-)
-
-TYPE_SE_DATA = file_to_data_url(
-    os.path.join(
-        AUDIO_DIR,
-        TYPE_SE_FILE
-    )
-)
-
-CHOICE_SE_DATA = file_to_data_url(
-    os.path.join(
-        AUDIO_DIR,
-        CHOICE_SE_FILE
-    )
-)
-
-
-if BGM_DATA:
-    print("BGM読み込み成功:", BGM_FILE)
-
-if TYPE_SE_DATA:
-    print("文字送り音読み込み成功:", TYPE_SE_FILE)
-
-if CHOICE_SE_DATA:
-    print("選択音読み込み成功:", CHOICE_SE_FILE)
-
-
-# ============================================================
-# JSON変換
-# ============================================================
-
-scenario_json = json.dumps(
-    SCENARIO,
-    ensure_ascii=False
-)
-
-characters_json = json.dumps(
-    CHARACTERS,
-    ensure_ascii=False
-)
-
-background_json = json.dumps(
-    BACKGROUND_DATA,
-    ensure_ascii=False
-)
-
-bgm_json = json.dumps(
-    BGM_DATA,
-    ensure_ascii=False
-)
-
-type_se_json = json.dumps(
-    TYPE_SE_DATA,
-    ensure_ascii=False
-)
-
-choice_se_json = json.dumps(
-    CHOICE_SE_DATA,
-    ensure_ascii=False
-)
-
-
-# ============================================================
-# HTML
-# ============================================================
-
-html = r"""
-
-<div id="novel-game">
-
-    <div id="game-screen">
-
-        <!-- 背景 -->
-        <img
-            id="background-image"
-            alt=""
-        >
-
-
-        <!-- タイトル画面 -->
-        <div id="title-screen">
-
-            <div id="game-title">
-                ラーメンを食べるか否か
-            </div>
-
-            <button id="game-start-button">
-                GAME START
-            </button>
-
-        </div>
-
-
-        <!-- テキスト画面 -->
-        <div id="text-panel">
-
-            <div id="character-name">
-            </div>
-
-            <div id="novel-text">
-            </div>
-
-            <div id="choice-area">
-            </div>
-
-            <button id="next-button">
-                ▼
-            </button>
-
-        </div>
-
-    </div>
-
-</div>
-
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ラーメンを食べるか否か</title>
 
 <style>
-
-/* ============================================================
-   全体
-============================================================ */
-
-#novel-game {
-
-    width: 100%;
-
+/* 全体 */
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: #111;
     display: flex;
-
+    align-items: center;
     justify-content: center;
-
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Yu Gothic",
-        "Hiragino Kaku Gothic ProN",
-        sans-serif;
 }
-
-
-/* ============================================================
-   ゲーム画面
-============================================================ */
-
-#game-screen {
-
-    position: relative;
-
-    width: 700px;
-
-    max-width: 100%;
-
-    height: 800px;
-
-    overflow: hidden;
-
-    background: #222222;
-
-    border-radius: 12px;
-
-    box-shadow:
-        0 8px 30px
-        rgba(0, 0, 0, 0.35);
-}
-
-
-/* ============================================================
-   背景画像
-
-   ★ 修正部分
-   高さ550px
-   object-fit: contain
-============================================================ */
-
-#background-image {
-
-    position: absolute;
-
-    top: 0;
-
-    left: 0;
-
+#novel-game {
     width: 100%;
+    display: flex;
+    justify-content: center;
+    font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+}
 
+/* ゲーム画面 */
+#game-screen {
+    position: relative;
+    width: 700px;
+    max-width: 100%;
+    height: 800px;
+    overflow: hidden;
+    background: #222;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+}
+
+/* 背景画像 */
+#background-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
     height: 550px;
-
     object-fit: contain;
-
-    background: #222222;
-
+    background: #222;
     display: none;
 }
 
-
-/* ============================================================
-   タイトル
-============================================================ */
-
+/* タイトル画面 */
 #title-screen {
-
     position: absolute;
-
-    top: 0;
-
-    left: 0;
-
-    width: 100%;
-
-    height: 100%;
-
+    inset: 0;
     z-index: 100;
-
     display: flex;
-
     flex-direction: column;
-
     justify-content: center;
-
     align-items: center;
-
-    background:
-        linear-gradient(
-            rgba(20, 20, 20, 0.5),
-            rgba(0, 0, 0, 0.9)
-        );
-
+    background: linear-gradient(
+        rgba(20,20,20,0.5),
+        rgba(0,0,0,0.9)
+    );
     color: white;
 }
-
-
 #game-title {
-
     margin-bottom: 70px;
-
     padding: 20px;
-
     font-size: 42px;
-
     font-weight: bold;
-
     text-align: center;
-
-    text-shadow:
-        0 3px 10px black;
+    text-shadow: 0 3px 10px black;
 }
-
-
-/* ============================================================
-   GAME START
-============================================================ */
-
 #game-start-button {
-
     width: 260px;
-
     padding: 18px;
-
-    border:
-        2px solid white;
-
+    border: 2px solid white;
     border-radius: 10px;
-
-    background:
-        rgba(0, 0, 0, 0.65);
-
+    background: rgba(0,0,0,0.65);
     color: white;
-
     font-size: 22px;
-
     font-weight: bold;
-
     cursor: pointer;
-
     transition: 0.2s;
 }
-
-
 #game-start-button:hover {
-
     background: white;
-
     color: black;
-
-    transform:
-        scale(1.05);
+    transform: scale(1.05);
 }
 
-
-/* ============================================================
-   テキストパネル
-============================================================ */
-
+/* テキスト画面 */
 #text-panel {
-
     position: absolute;
-
     left: 10px;
-
     right: 10px;
-
     bottom: 10px;
-
     z-index: 20;
-
     min-height: 220px;
-
     padding: 18px;
-
     box-sizing: border-box;
-
-    background:
-        rgba(10, 10, 10, 0.92);
-
+    background: rgba(10,10,10,0.92);
     border-radius: 12px;
-
     color: white;
-
     cursor: pointer;
-
     display: none;
 }
-
-
-/* ============================================================
-   キャラクター名
-============================================================ */
-
 #character-name {
-
     min-height: 30px;
-
     margin-bottom: 10px;
-
     font-size: 20px;
-
     font-weight: bold;
 }
-
-
-/* ============================================================
-   本文
-============================================================ */
-
 #novel-text {
-
     min-height: 100px;
-
     font-size: 18px;
-
     line-height: 1.8;
-
     white-space: pre-wrap;
 }
 
-
-/* ============================================================
-   次へ
-============================================================ */
-
+/* 次へボタン */
 #next-button {
-
     position: absolute;
-
     right: 15px;
-
     bottom: 12px;
-
     width: 50px;
-
     height: 40px;
-
     border: none;
-
     border-radius: 8px;
-
     background: transparent;
-
     color: white;
-
     font-size: 22px;
-
     cursor: pointer;
-
     display: none;
 }
-
-
 #next-button:hover {
-
-    background:
-        rgba(255, 255, 255, 0.1);
+    background: rgba(255,255,255,0.1);
 }
 
-
-/* ============================================================
-   選択肢
-============================================================ */
-
+/* 選択肢 */
 #choice-area {
-
     width: 100%;
 }
-
-
 .choice-button {
-
     display: block;
-
     width: 100%;
-
     margin: 10px 0;
-
     padding: 16px;
-
     box-sizing: border-box;
-
     border: none;
-
     border-radius: 8px;
-
-    background:
-        rgba(50, 50, 50, 0.95);
-
+    background: rgba(50,50,50,0.95);
     color: white;
-
     font-size: 17px;
-
     cursor: pointer;
-
     transition: 0.15s;
 }
-
-
 .choice-button:hover {
-
-    background:
-        rgba(90, 90, 90, 0.95);
-
-    transform:
-        translateY(-1px);
+    background: rgba(90,90,90,0.95);
+    transform: translateY(-1px);
 }
 
-
-/* ============================================================
-   END
-============================================================ */
-
+/* エンディング */
 .end-title {
-
     margin-bottom: 15px;
-
     font-size: 28px;
-
     font-weight: bold;
 }
-
-
 .end-return {
-
     margin-top: 25px;
-
     font-size: 14px;
-
     opacity: 0.65;
 }
-
 </style>
+</head>
 
+<body>
+<div id="novel-game">
+    <div id="game-screen">
+        <img id="background-image" alt="">
+
+        <div id="title-screen">
+            <div id="game-title">ラーメンを食べるか否か</div>
+            <button id="game-start-button">GAME START</button>
+        </div>
+
+        <div id="text-panel">
+            <div id="character-name"></div>
+            <div id="novel-text"></div>
+            <div id="choice-area"></div>
+            <button id="next-button">▼</button>
+        </div>
+    </div>
+</div>
 
 <script>
-
 (function () {
-
+"use strict";
 
 // ============================================================
-// データ
+// キャラクター
 // ============================================================
+const CHARACTERS = {
+    player: { name: "主人公", color: "#FFFFFF" },
+    sale: { name: "店員", color: "#FF77AA" },
+    boss: { name: "魔王", color: "#FF77AA" },
+    mysterious: { name: "???", color: "#8888FF" }
+};
 
-const SCENARIO =
-    __SCENARIO_JSON__;
+// ============================================================
+// シナリオ
+// ============================================================
+const SCENARIO = [
+    // 0
+    {
+        type: "text",
+        character: "player",
+        background: "bg_home.png",
+        text: "腹減った。早く家に帰ってご飯食べよ。"
+    },
+    // 1
+    {
+        type: "narration",
+        background: "bg_ramen.png",
+        text: "目の前にラーメン二郎の店があった。"
+    },
+    // 2
+    {
+        type: "narration",
+        background: "ramen1.png",
+        text: "主人公は週に1、2回は食べるほどラーメンが好きだ。"
+    },
+    // 3
+    {
+        type: "narration",
+        background: "ramen1.png",
+        text: "特に二郎系が好きで、濃厚なスープ、太くモチモチした麺、柔らかく美味しいチャーシュー、強烈なニンニクの香りと味を味わいたく来店することが多い。"
+    },
+    // 4
+    {
+        type: "narration",
+        background: "ramen1.png",
+        text: "だが、最近はゲームやコンビニでも金を使っているため、余裕がなくなってきている。"
+    },
+    // 5
+    {
+        type: "narration",
+        text: "そのため、最近は無駄な出費は抑え、ご飯も家で済ますようにしていた。"
+    },
+    // 6
+    {
+        type: "narration",
+        background: "bg_ramen.png",
+        text: "悩んだ末に、主人公は..."
+    },
+    // 7
+    {
+        type: "choice",
+        background: "bg_ramen.png",
+        choices: [
+            { text: "二郎に行く。", next: 8 },
+            { text: "家で食べる。", next: 19 }
+        ]
+    },
+    // 8
+    {
+        type: "text",
+        character: "player",
+        background: "bg_ramen.png",
+        text: "ああ、我慢できない!"
+    },
+    // 9
+    {
+        type: "narration",
+        background: "ramen4.png",
+        text: "主人公は食券を店員に渡し席についた。"
+    },
+    // 10
+    {
+        type: "narration",
+        background: "ramen4.png",
+        text: "...10分後"
+    },
+    // 11
+    {
+        type: "text",
+        character: "sale",
+        background: "ramen4.png",
+        text: "ニンニク入れますか?"
+    },
+    // 12
+    {
+        type: "text",
+        character: "player",
+        background: "ramen4.png",
+        text: "ニンニク、アブラ、カラメで。"
+    },
+    // 13
+    {
+        type: "text",
+        character: "sale",
+        background: "ramen2.png",
+        text: "はいっ!お待たせしました!ニンニク、アブラ、カラメです。"
+    },
+    // 14
+    {
+        type: "text",
+        character: "player",
+        background: "ramen2.png",
+        text: "いただきます!"
+    },
+    // 15
+    {
+        type: "narration",
+        background: "ramen2.png",
+        text: "...10分後"
+    },
+    // 16
+    {
+        type: "text",
+        character: "player",
+        background: "ramen3.png",
+        text: "ご馳走様でした。"
+    },
+    // 17
+    {
+        type: "text",
+        character: "player",
+        background: "nightsky.png",
+        text: "満腹、満腹。美味しかった。"
+    },
+    // 18
+    {
+        type: "end",
+        background: "Apple.png",
+        title: "満足END",
+        text: "帰りにリンゴジュースを買った。"
+    },
+    // 19
+    {
+        type: "text",
+        character: "player",
+        background: "nightsky.png",
+        text: "家にまだご飯あるし、食べようと思えばいつでも食えるし、我慢しよう。"
+    },
+    // 20
+    {
+        type: "end",
+        background: "end2.png",
+        title: "節約END",
+        text: "節約できた。"
+    }
+];
 
-const CHARACTERS =
-    __CHARACTERS_JSON__;
+// ============================================================
+// 画像・音声設定
+// index.htmlと同じ階層のファイルを参照
+// ============================================================
+const BACKGROUND_DATA = {
+    "bg_home.png": "bg_home.png",
+    "bg_ramen.png": "bg_ramen.png",
+    "ramen1.png": "ramen1.png",
+    "ramen2.png": "ramen2.png",
+    "ramen3.png": "ramen3.png",
+    "ramen4.png": "ramen4.png",
+    "nightsky.png": "nightsky.png",
+    "Apple.png": "Apple.png",
+    "end2.png": "end2.png"
+};
 
-const BACKGROUND_DATA =
-    __BACKGROUND_JSON__;
-
-const BGM_DATA =
-    __BGM_JSON__;
-
-const TYPE_SE_DATA =
-    __TYPE_SE_JSON__;
-
-const CHOICE_SE_DATA =
-    __CHOICE_SE_JSON__;
-
+const BGM_DATA = "bgm.mp3";
+const TYPE_SE_DATA = "type.mp3";
+const CHOICE_SE_DATA = "choice.mp3";
 
 // ============================================================
 // 設定
 // ============================================================
-
 const TYPE_SPEED = 40;
-
 const START_DELAY = 300;
-
 const CHOICE_DELAY = 500;
-
 
 // ============================================================
 // 状態
 // ============================================================
-
 let index = 0;
-
 let currentText = "";
-
 let currentPosition = 0;
-
 let typing = false;
-
 let waitingForNext = false;
-
 let gameStarted = false;
-
 let isEnding = false;
-
 let processId = 0;
 
 let typeTimer = null;
-
 let startTimer = null;
-
 let choiceTimer = null;
 
-
 // ============================================================
-// UI
+// UI取得
 // ============================================================
-
-const root =
-    document.getElementById(
-        "novel-game"
-    );
-
-
-const titleScreen =
-    root.querySelector(
-        "#title-screen"
-    );
-
-
-const startButton =
-    root.querySelector(
-        "#game-start-button"
-    );
-
-
-const backgroundImage =
-    root.querySelector(
-        "#background-image"
-    );
-
-
-const textPanel =
-    root.querySelector(
-        "#text-panel"
-    );
-
-
-const characterName =
-    root.querySelector(
-        "#character-name"
-    );
-
-
-const novelText =
-    root.querySelector(
-        "#novel-text"
-    );
-
-
-const choiceArea =
-    root.querySelector(
-        "#choice-area"
-    );
-
-
-const nextButton =
-    root.querySelector(
-        "#next-button"
-    );
-
+const root = document.getElementById("novel-game");
+const titleScreen = root.querySelector("#title-screen");
+const startButton = root.querySelector("#game-start-button");
+const backgroundImage = root.querySelector("#background-image");
+const textPanel = root.querySelector("#text-panel");
+const characterName = root.querySelector("#character-name");
+const novelText = root.querySelector("#novel-text");
+const choiceArea = root.querySelector("#choice-area");
+const nextButton = root.querySelector("#next-button");
 
 // ============================================================
 // 音声
 // ============================================================
+const bgm = new Audio(BGM_DATA);
+bgm.loop = true;
+bgm.volume = 0.35;
 
-let bgm = null;
+const typeSE = new Audio(TYPE_SE_DATA);
+typeSE.volume = 0.25;
 
-let typeSE = null;
+const choiceSE = new Audio(CHOICE_SE_DATA);
+choiceSE.volume = 0.7;
 
-let choiceSE = null;
-
-
-if (BGM_DATA) {
-
-    bgm =
-        new Audio(
-            BGM_DATA
-        );
-
-    bgm.loop = true;
-
-    bgm.volume = 0.35;
+function playSE(audio) {
+    try {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+    } catch (error) {
+        console.log("効果音再生失敗:", error);
+    }
 }
-
-
-if (TYPE_SE_DATA) {
-
-    typeSE =
-        new Audio(
-            TYPE_SE_DATA
-        );
-
-    typeSE.volume = 0.25;
-}
-
-
-if (CHOICE_SE_DATA) {
-
-    choiceSE =
-        new Audio(
-            CHOICE_SE_DATA
-        );
-
-    choiceSE.volume = 0.7;
-}
-
-
-// ============================================================
-// BGM開始
-// ============================================================
 
 function startBGM() {
-
-    if (!bgm) {
-        return;
-    }
-
-
     bgm.currentTime = 0;
-
-
-    bgm.play().catch(
-
-        function(error) {
-
-            console.log(
-                "BGM再生失敗:",
-                error
-            );
-
-        }
-    );
+    bgm.play().catch(error => {
+        console.log("BGM再生失敗:", error);
+    });
 }
-
-
-// ============================================================
-// BGM停止
-// ============================================================
 
 function stopBGM() {
-
-    if (!bgm) {
-        return;
-    }
-
-
     bgm.pause();
-
     bgm.currentTime = 0;
 }
-
 
 // ============================================================
 // 背景変更
 // ============================================================
-
 function updateBackground(data) {
+    if (!("background" in data)) return;
 
-    // background指定なし
-    // 前の背景を維持
-
-    if (!("background" in data)) {
-
-        return;
-    }
-
-
-    const filename =
-        data.background;
-
+    const filename = data.background;
 
     if (!filename) {
-
-        backgroundImage.style.display =
-            "none";
-
-
-        backgroundImage.removeAttribute(
-            "src"
-        );
-
-
+        backgroundImage.style.display = "none";
+        backgroundImage.removeAttribute("src");
         return;
     }
 
-
-    const imageData =
-        BACKGROUND_DATA[
-            filename
-        ];
-
+    const imageData = BACKGROUND_DATA[filename];
 
     if (!imageData) {
-
-        console.log(
-            "画像がありません:",
-            filename
-        );
-
-
+        console.log("画像がありません:", filename);
         return;
     }
 
-
-    backgroundImage.src =
-        imageData;
-
-
-    backgroundImage.style.display =
-        "block";
+    backgroundImage.src = imageData;
+    backgroundImage.style.display = "block";
 }
 
+// ============================================================
+// タイマー初期化
+// ============================================================
+function clearTimers() {
+    clearTimeout(typeTimer);
+    clearTimeout(startTimer);
+    clearTimeout(choiceTimer);
+}
 
 // ============================================================
 // GAME START
 // ============================================================
-
 function startGame() {
-
-    clearTimeout(typeTimer);
-
-    clearTimeout(startTimer);
-
-    clearTimeout(choiceTimer);
-
-
+    clearTimers();
     processId++;
 
-
     index = 0;
-
     currentText = "";
-
     currentPosition = 0;
-
     typing = false;
-
     waitingForNext = false;
-
     gameStarted = true;
-
     isEnding = false;
 
-
     characterName.textContent = "";
-
     novelText.textContent = "";
-
     choiceArea.innerHTML = "";
+    nextButton.style.display = "none";
 
-    nextButton.style.display =
-        "none";
-
-
-    // タイトルを消す
-
-    titleScreen.style.display =
-        "none";
-
-
-    // テキストパネル表示
-
-    textPanel.style.display =
-        "block";
-
-
-    // BGM開始
+    titleScreen.style.display = "none";
+    textPanel.style.display = "block";
 
     startBGM();
-
-
-    // シナリオ開始
-
     showCurrent();
 }
-
 
 // ============================================================
 // タイトルへ戻る
 // ============================================================
-
 function returnToTitle() {
-
-    clearTimeout(typeTimer);
-
-    clearTimeout(startTimer);
-
-    clearTimeout(choiceTimer);
-
-
+    clearTimers();
     processId++;
 
-
     index = 0;
-
     currentText = "";
-
     currentPosition = 0;
-
     typing = false;
-
     waitingForNext = false;
-
     gameStarted = false;
-
     isEnding = false;
-
-
-    // BGM停止
 
     stopBGM();
 
-
-    // SE停止
-
-    if (typeSE) {
-
-        typeSE.pause();
-
-        typeSE.currentTime = 0;
-    }
-
-
-    if (choiceSE) {
-
-        choiceSE.pause();
-
-        choiceSE.currentTime = 0;
-    }
-
-
-    // UI初期化
+    typeSE.pause();
+    typeSE.currentTime = 0;
+    choiceSE.pause();
+    choiceSE.currentTime = 0;
 
     characterName.textContent = "";
-
     novelText.textContent = "";
-
     choiceArea.innerHTML = "";
+    nextButton.style.display = "none";
 
-    nextButton.style.display =
-        "none";
+    textPanel.style.display = "none";
+    backgroundImage.style.display = "none";
+    backgroundImage.removeAttribute("src");
 
-
-    textPanel.style.display =
-        "none";
-
-
-    // 背景を消す
-
-    backgroundImage.style.display =
-        "none";
-
-
-    backgroundImage.removeAttribute(
-        "src"
-    );
-
-
-    // タイトル表示
-
-    titleScreen.style.display =
-        "flex";
+    titleScreen.style.display = "flex";
 }
 
-
 // ============================================================
-// 現在のシーン
+// 現在のシーンを表示
 // ============================================================
-
 function showCurrent() {
-
     processId++;
+    const currentId = processId;
 
-
-    const currentId =
-        processId;
-
-
-    clearTimeout(typeTimer);
-
-    clearTimeout(startTimer);
-
-    clearTimeout(choiceTimer);
-
-
+    clearTimers();
     choiceArea.innerHTML = "";
-
-
     typing = false;
-
     waitingForNext = false;
+    nextButton.style.display = "none";
 
-
-    nextButton.style.display =
-        "none";
-
-
-    if (
-        index < 0 ||
-        index >= SCENARIO.length
-    ) {
-
+    if (index < 0 || index >= SCENARIO.length) {
         returnToTitle();
-
         return;
     }
 
-
-    const data =
-        SCENARIO[index];
-
-
-    // 背景
-
+    const data = SCENARIO[index];
     updateBackground(data);
 
-
-    // ========================================================
-    // END
-    // ========================================================
-
+    // エンディング
     if (data.type === "end") {
-
         isEnding = true;
-
-
-        characterName.style.color =
-            "#FFFFFF";
-
-
+        characterName.style.color = "#FFFFFF";
         characterName.innerHTML =
-            '<div class="end-title">'
-            +
-            (data.title || "END")
-            +
+            '<div class="end-title">' +
+            (data.title || "END") +
             '</div>';
-
 
         novelText.innerHTML =
-            (data.text || "")
-            +
-            '<div class="end-return">'
-            +
-            'クリックでタイトルへ戻る'
-            +
+            (data.text || "") +
+            '<div class="end-return">' +
+            'クリックでタイトルへ戻る' +
             '</div>';
 
-
-        nextButton.style.display =
-            "none";
-
-
+        nextButton.style.display = "none";
         return;
     }
 
-
-    // ========================================================
     // 選択肢
-    // ========================================================
-
     if (data.type === "choice") {
-
         isEnding = false;
-
-
-        characterName.textContent =
-            "選択";
-
-
-        characterName.style.color =
-            "#FFFFFF";
-
-
-        novelText.textContent =
-            "";
-
-
+        characterName.textContent = "選択";
+        characterName.style.color = "#FFFFFF";
+        novelText.textContent = "";
         showChoices(data);
-
-
         return;
     }
-
 
     let text = "";
 
-
-    // ========================================================
-    // 通常文章
-    // ========================================================
-
+    // 通常のセリフ
     if (data.type === "text") {
-
-        const character =
-            CHARACTERS[
-                data.character
-            ] || {};
-
-
-        characterName.textContent =
-            character.name || "";
-
-
-        characterName.style.color =
-            character.color ||
-            "#FFFFFF";
-
-
-        text =
-            data.text || "";
+        const character = CHARACTERS[data.character] || {};
+        characterName.textContent = character.name || "";
+        characterName.style.color = character.color || "#FFFFFF";
+        text = data.text || "";
     }
 
-
-    // ========================================================
     // ナレーション
-    // ========================================================
-
-    else if (
-        data.type === "narration"
-    ) {
-
-        characterName.textContent =
-            "";
-
-
-        characterName.style.color =
-            "#FFFFFF";
-
-
-        text =
-            data.text || "";
+    else if (data.type === "narration") {
+        characterName.textContent = "";
+        characterName.style.color = "#FFFFFF";
+        text = data.text || "";
     }
-
-
-    // ========================================================
-    // 不明なtype
-    // ========================================================
 
     else {
-
         index++;
-
         showCurrent();
-
         return;
     }
 
-
-    prepareText(
-        text,
-        currentId
-    );
+    prepareText(text, currentId);
 }
-
 
 // ============================================================
 // 文章準備
 // ============================================================
-
-function prepareText(
-    text,
-    currentId
-) {
-
+function prepareText(text, currentId) {
     currentText = text;
-
     currentPosition = 0;
-
     novelText.textContent = "";
-
     typing = false;
-
     waitingForNext = false;
+    nextButton.style.display = "none";
 
+    startTimer = setTimeout(() => {
+        if (currentId !== processId) return;
 
-    nextButton.style.display =
-        "none";
-
-
-    startTimer =
-        setTimeout(
-
-            function() {
-
-                if (
-                    currentId !==
-                    processId
-                ) {
-
-                    return;
-                }
-
-
-                typing = true;
-
-
-                typeNextCharacter(
-                    currentId
-                );
-
-            },
-
-            START_DELAY
-        );
+        typing = true;
+        typeNextCharacter(currentId);
+    }, START_DELAY);
 }
-
 
 // ============================================================
 // 文字送り
 // ============================================================
+function typeNextCharacter(currentId) {
+    if (currentId !== processId || !typing) return;
 
-function typeNextCharacter(
-    currentId
-) {
-
-    if (
-        currentId !==
-        processId
-    ) {
-
-        return;
-    }
-
-
-    if (!typing) {
-
-        return;
-    }
-
-
-    if (
-        currentPosition >=
-        currentText.length
-    ) {
-
+    if (currentPosition >= currentText.length) {
         finishTyping();
-
         return;
     }
-
 
     currentPosition++;
 
-
     novelText.textContent =
-        currentText.substring(
-            0,
-            currentPosition
-        );
+        currentText.substring(0, currentPosition);
 
-
-    // ========================================================
-    // type.mp3
-    // 2文字ごと
-    // ========================================================
-
-    if (
-        typeSE &&
-        currentPosition % 2 === 0
-    ) {
-
-        try {
-
-            typeSE.pause();
-
-            typeSE.currentTime = 0;
-
-
-            typeSE.play().catch(
-                function() {}
-            );
-
-        }
-
-        catch(error) {
-
-        }
+    // 2文字ごとに効果音
+    if (currentPosition % 2 === 0) {
+        playSE(typeSE);
     }
 
-
-    typeTimer =
-        setTimeout(
-
-            function() {
-
-                typeNextCharacter(
-                    currentId
-                );
-
-            },
-
-            TYPE_SPEED
-        );
+    typeTimer = setTimeout(() => {
+        typeNextCharacter(currentId);
+    }, TYPE_SPEED);
 }
-
 
 // ============================================================
 // 文字送り終了
 // ============================================================
-
 function finishTyping() {
-
     typing = false;
-
-
-    currentPosition =
-        currentText.length;
-
-
-    novelText.textContent =
-        currentText;
-
-
+    currentPosition = currentText.length;
+    novelText.textContent = currentText;
     waitingForNext = true;
-
-
-    nextButton.style.display =
-        "block";
+    nextButton.style.display = "block";
 }
-
 
 // ============================================================
 // 全文表示
 // ============================================================
-
 function showFullText() {
-
     clearTimeout(typeTimer);
-
     clearTimeout(startTimer);
 
-
     typing = false;
-
-
-    currentPosition =
-        currentText.length;
-
-
-    novelText.textContent =
-        currentText;
-
-
+    currentPosition = currentText.length;
+    novelText.textContent = currentText;
     waitingForNext = true;
-
-
-    nextButton.style.display =
-        "block";
+    nextButton.style.display = "block";
 }
-
 
 // ============================================================
 // 次のシーン
 // ============================================================
-
 function nextScene() {
-
-    if (!gameStarted) {
-
-        return;
-    }
-
+    if (!gameStarted) return;
 
     typing = false;
-
     waitingForNext = false;
-
-
     index++;
-
 
     showCurrent();
 }
 
-
 // ============================================================
 // 選択肢
 // ============================================================
-
 function showChoices(data) {
-
     choiceArea.innerHTML = "";
 
+    const choices = data.choices || [];
 
-    const choices =
-        data.choices || [];
+    choices.forEach(choice => {
+        const button = document.createElement("button");
+        button.className = "choice-button";
+        button.textContent = choice.text || "";
 
+        button.addEventListener("click", event => {
+            event.stopPropagation();
 
-    choices.forEach(
+            playSE(choiceSE);
+            choiceArea.innerHTML = "";
 
-        function(choice) {
+            if (choice.next !== undefined &&
+                choice.next !== null) {
+                index = choice.next;
+            } else {
+                index++;
+            }
 
-            const button =
-                document.createElement(
-                    "button"
-                );
+            processId++;
+            const choiceId = processId;
 
+            choiceTimer = setTimeout(() => {
+                if (choiceId !== processId) return;
+                showCurrent();
+            }, CHOICE_DELAY);
+        });
 
-            button.className =
-                "choice-button";
-
-
-            button.textContent =
-                choice.text || "";
-
-
-            button.addEventListener(
-
-                "click",
-
-                function(event) {
-
-                    event.stopPropagation();
-
-
-                    // ========================================
-                    // choice.mp3
-                    // ========================================
-
-                    if (choiceSE) {
-
-                        try {
-
-                            choiceSE.pause();
-
-                            choiceSE.currentTime = 0;
-
-
-                            choiceSE.play().catch(
-                                function() {}
-                            );
-
-                        }
-
-                        catch(error) {
-
-                        }
-                    }
-
-
-                    choiceArea.innerHTML =
-                        "";
-
-
-                    // 分岐
-
-                    if (
-                        choice.next !==
-                        undefined &&
-                        choice.next !==
-                        null
-                    ) {
-
-                        index =
-                            choice.next;
-
-                    }
-
-                    else {
-
-                        index++;
-                    }
-
-
-                    processId++;
-
-
-                    const choiceId =
-                        processId;
-
-
-                    choiceTimer =
-                        setTimeout(
-
-                            function() {
-
-                                if (
-                                    choiceId !==
-                                    processId
-                                ) {
-
-                                    return;
-                                }
-
-
-                                showCurrent();
-
-                            },
-
-                            CHOICE_DELAY
-                        );
-                }
-            );
-
-
-            choiceArea.appendChild(
-                button
-            );
-        }
-    );
+        choiceArea.appendChild(button);
+    });
 }
 
+// ============================================================
+// GAME START ボタン
+// ============================================================
+startButton.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    startGame();
+});
 
 // ============================================================
-// GAME START
+// ▼ ボタン
 // ============================================================
+nextButton.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
 
-startButton.addEventListener(
-
-    "click",
-
-    function(event) {
-
-        event.preventDefault();
-
-        event.stopPropagation();
-
-
-        startGame();
+    if (isEnding) {
+        returnToTitle();
+        return;
     }
-);
 
-
-// ============================================================
-// ▼
-// ============================================================
-
-nextButton.addEventListener(
-
-    "click",
-
-    function(event) {
-
-        event.preventDefault();
-
-        event.stopPropagation();
-
-
-        if (isEnding) {
-
-            returnToTitle();
-
-            return;
-        }
-
-
-        if (typing) {
-
-            showFullText();
-
-            return;
-        }
-
-
-        if (waitingForNext) {
-
-            nextScene();
-        }
+    if (typing) {
+        showFullText();
+        return;
     }
-);
 
-
-// ============================================================
-// テキストパネル
-// ============================================================
-
-textPanel.addEventListener(
-
-    "click",
-
-    function(event) {
-
-
-        // END → タイトル
-
-        if (isEnding) {
-
-            returnToTitle();
-
-            return;
-        }
-
-
-        if (!gameStarted) {
-
-            return;
-        }
-
-
-        // 選択肢
-
-        if (
-            event.target.classList &&
-            event.target.classList.contains(
-                "choice-button"
-            )
-        ) {
-
-            return;
-        }
-
-
-        // ▼
-
-        if (
-            event.target ===
-            nextButton
-        ) {
-
-            return;
-        }
-
-
-        // 文字送り中
-
-        if (typing) {
-
-            showFullText();
-
-            return;
-        }
-
-
-        // 次へ
-
-        if (waitingForNext) {
-
-            nextScene();
-        }
+    if (waitingForNext) {
+        nextScene();
     }
-);
+});
 
+// ============================================================
+// テキストパネルのクリック
+// ============================================================
+textPanel.addEventListener("click", event => {
+    if (isEnding) {
+        returnToTitle();
+        return;
+    }
+
+    if (!gameStarted) return;
+
+    if (event.target.closest(".choice-button")) return;
+    if (event.target === nextButton) return;
+
+    if (typing) {
+        showFullText();
+        return;
+    }
+
+    if (waitingForNext) {
+        nextScene();
+    }
+});
 
 // ============================================================
 // 初期画面
 // ============================================================
-
-titleScreen.style.display =
-    "flex";
-
-
-textPanel.style.display =
-    "none";
-
-
-backgroundImage.style.display =
-    "none";
-
+titleScreen.style.display = "flex";
+textPanel.style.display = "none";
+backgroundImage.style.display = "none";
 
 })();
-
 </script>
-"""
-
-
-# ============================================================
-# データ埋め込み
-# ============================================================
-
-html = html.replace(
-    "__SCENARIO_JSON__",
-    scenario_json
-)
-
-html = html.replace(
-    "__CHARACTERS_JSON__",
-    characters_json
-)
-
-html = html.replace(
-    "__BACKGROUND_JSON__",
-    background_json
-)
-
-html = html.replace(
-    "__BGM_JSON__",
-    bgm_json
-)
-
-html = html.replace(
-    "__TYPE_SE_JSON__",
-    type_se_json
-)
-
-html = html.replace(
-    "__CHOICE_SE_JSON__",
-    choice_se_json
-)
-
-
-# ============================================================
-# 表示
-# ============================================================
-
-display(
-    HTML(html)
-)
+</body>
+</html>
